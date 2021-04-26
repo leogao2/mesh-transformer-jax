@@ -156,5 +156,7 @@ if __name__ == "__main__":
         except KeyboardInterrupt:
             break
         except Exception as e:
+            import traceback
+            traceback.print_exc()  
             print("Exception: ", e)
         first = False
