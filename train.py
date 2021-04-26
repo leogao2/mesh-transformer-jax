@@ -60,7 +60,7 @@ def main(first=True):
     val_every = params["val_every"]
     ckpt_every = params["ckpt_every"]
     keep_every = params["keep_every"]
-    eval_tasks = params["eval_harness_tasks"]
+    eval_tasks = params.get("eval_harness_tasks", [])
     total_steps = params["total_steps"]
 
     pe = params["pe"]
