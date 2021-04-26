@@ -7,7 +7,8 @@ import wandb
 from tqdm import tqdm
 
 from mesh_transformer.build_model import build_model
-from tasks import *
+from lm_eval import evaluator, tasks
+from tasks.eval_harness import EvalHarnessAdaptor
 from tfrecord_loader import TFRecordNewInputs
 
 
@@ -59,6 +60,8 @@ def main(first=True):
     val_every = params["val_every"]
     ckpt_every = params["ckpt_every"]
     keep_every = params["keep_every"]
+    eval_tasks = params["eval_harness_tasks"]
+    total_steps = params["total_steps"]
 
     pe = params["pe"]
     assert pe in ["fixed", "rotary", "t5"]
@@ -79,7 +82,8 @@ def main(first=True):
 
     train_dataset = TFRecordNewInputs(f"data/{params['train_set']}",
                                       batch_size=(
-                                      gradient_accumulation_steps, per_replica_batch * tpu_size // cores_per_replica),
+                                          gradient_accumulation_steps,
+                                          per_replica_batch * tpu_size // cores_per_replica),
                                       sample_size=params['seq'],
                                       restore_state=train_load_restore)
 
@@ -92,10 +96,7 @@ def main(first=True):
                                         batch_size=(global_val_batch,),
                                         sample_size=seq)
 
-    lambada = LambadaTask(seq)
-    winogrande = WinograndeTask(seq)
-    piqa = PIQATask(seq)
-    hella = HellaSwagTask(seq, first=2560)
+    adaptor = EvalHarnessAdaptor(t, seq, global_val_batch)
 
     start = time.time()
     t.train(train_dataset.get_samples())
@@ -112,11 +113,14 @@ def main(first=True):
         loss, last_loss = t.train(train_dataset.get_samples())
         wandb.log({'train/loss': loss, 'train/last_loss': last_loss}, step)
 
-        if step % ckpt_every == 0 and step:
+        if (step % ckpt_every == 0 and step) or step == total_steps:
             t.save(step, bucket, model_dir,
                    aux={"train_loader": train_dataset.get_state()},
                    init=False,
                    delete_old=step % keep_every != 0)
+
+            if step == total_steps:
+                return True
 
         if step % val_every == 0:
             for name, val_set in val_sets.items():
@@ -130,22 +134,15 @@ def main(first=True):
 
                 wandb.log({f'val/loss_{name}': val_loss}, step)
 
-            lambada_results = lambada.run(global_val_batch, t)
-            wandb.log(lambada_results, step)
-            print(lambada_results)
+            results = evaluator.evaluate(adaptor, tasks.get_task_dict(eval_tasks), False, 0, None)
 
-            winogrande_results = winogrande.run(global_val_batch, t)
-            wandb.log(winogrande_results, step)
-            print(winogrande_results)
+            flat_results = {}
 
-            piqa_results = piqa.run(global_val_batch, t)
-            wandb.log(piqa_results, step)
-            print(piqa_results)
+            for task_name, task_res in results.items():
+                for metric_name, metric_res in task_res.items():
+                    flat_results[f"{task_name}/{metric_name}"] = metric_res
 
-            hella_results = hella.run(global_val_batch, t)
-            wandb.log(hella_results, step)
-            print(hella_results)
-
+            wandb.log(flat_results, step)
         step += 1
 
 
@@ -153,9 +150,11 @@ if __name__ == "__main__":
     first = True
     while True:
         try:
-            main(first)
+            ret = main(first)
+            if ret:
+                break
         except KeyboardInterrupt:
             break
-        except:
-            pass
+        except Exception as e:
+            print("Exception: ", e)
         first = False
