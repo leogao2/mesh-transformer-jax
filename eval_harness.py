@@ -61,8 +61,7 @@ if __name__ == "__main__":
                                                                "openbookqa",
                                                                "sciq",
                                                                "triviaqa",
-                                                               "wmt16-de-en",
-                                                               "wmt16-en-de",
+                                                               
                                                                # "cb",
                                                                # "copa",
                                                                # "multirc",
