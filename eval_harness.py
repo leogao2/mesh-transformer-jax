@@ -56,7 +56,13 @@ if __name__ == "__main__":
                                                                "winogrande",
                                                                "mathqa",
                                                                "pubmedqa",
-                                                               # "boolq",
+                                                               "boolq",
+                                                               "anli_r3",
+                                                               "openbookqa",
+                                                               "sciq",
+                                                               "triviaqa",
+                                                               "wmt16-de-en",
+                                                               "wmt16-en-de",
                                                                # "cb",
                                                                # "copa",
                                                                # "multirc",
@@ -66,9 +72,10 @@ if __name__ == "__main__":
                                                                ]), False, 0, None)
     dumped = json.dumps(results, indent=2)
     print(dumped)
+    json.dumps(results, open("eval_results.json") indent=2)
 
-    results = evaluator.evaluate(adaptor, tasks.get_task_dict(["lambada_cloze",
-                                                               ]), False, 15, None)
+#     results = evaluator.evaluate(adaptor, tasks.get_task_dict(["lambada_cloze",
+#                                                                ]), False, 15, None)
 
     dumped = json.dumps(results, indent=2)
     print(dumped)
