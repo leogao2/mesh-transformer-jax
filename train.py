@@ -1,6 +1,7 @@
 import argparse
 import json
 import time
+import traceback
 
 import numpy as np
 import wandb
@@ -28,7 +29,7 @@ def parse_args():
     return args
 
 
-def main(first=True):
+if __name__ == "__main__":
     args = parse_args()
     params = json.load(open(args.config))
 
@@ -40,7 +41,7 @@ def main(first=True):
     tpu_name = args.tpu
     region = args.tpu_region
     preemptible = args.preemptible
-    clean_start = args.new and first
+    clean_start = args.new
 
     gradient_accumulation_steps = params.get("gradient_accumulation_steps", 1)
     per_replica_batch = params["per_replica_batch"]
@@ -96,7 +97,8 @@ def main(first=True):
                                         batch_size=(global_val_batch,),
                                         sample_size=seq)
 
-    adaptor = EvalHarnessAdaptor(t, seq, global_val_batch)
+    # run eval for 1024 tokens (unless model has fixed context length)
+    adaptor = EvalHarnessAdaptor(t, 1024 if pe is not "fixed" else seq, global_val_batch * 4)
 
     start = time.time()
     t.train(train_dataset.get_samples())
@@ -120,7 +122,7 @@ def main(first=True):
                    delete_old=step % keep_every != 0)
 
             if step == total_steps:
-                return True
+                exit()
 
         if step % val_every == 0:
             for name, val_set in val_sets.items():
@@ -144,19 +146,3 @@ def main(first=True):
 
             wandb.log(flat_results, step)
         step += 1
-
-
-if __name__ == "__main__":
-    first = True
-    while True:
-        try:
-            ret = main(first)
-            if ret:
-                break
-        except KeyboardInterrupt:
-            break
-        except Exception as e:
-            import traceback
-            traceback.print_exc()  
-            print("Exception: ", e)
-        first = False
