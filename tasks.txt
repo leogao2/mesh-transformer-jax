@@ -95,10 +95,3 @@ hendrycksTest-sociology
 hendrycksTest-us_foreign_policy
 hendrycksTest-virology
 hendrycksTest-world_religions
-math_algebra
-math_counting_and_prob
-math_geometry
-math_intermediate_algebra
-math_num_theory
-math_prealgebra
-math_precalc
