@@ -51,25 +51,7 @@ if __name__ == "__main__":
     step, aux = t.load(bucket, model_dir)
     t.move()
 
-    results = evaluator.evaluate(adaptor, tasks.get_task_dict(["lambada",
-                                                               "piqa",
-                                                               "hellaswag",
-                                                               "winogrande",
-                                                               "mathqa",
-                                                               "pubmedqa",
-                                                               "boolq",
-                                                               "anli_r3",
-                                                               "openbookqa",
-                                                               "sciq",
-                                                               "triviaqa",
-                                                               
-                                                               # "cb",
-                                                               # "copa",
-                                                               # "multirc",
-                                                               # "record",
-                                                               # "wic",
-                                                               # "wsc",
-                                                               ]), False, 0, None)
+    results = evaluator.evaluate(adaptor, tasks.get_task_dict(tasks.get_task_dict(open("tasks.txt").read().strip().split("\n")), False, 0, None)
     dumped = json.dumps(results, indent=2)
     print(dumped)
     json.dump(results, open("eval_results.json", "w"), indent=2)
