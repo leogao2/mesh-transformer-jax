@@ -162,4 +162,4 @@ def start_ray(conn, address, version=1):
 
     time.sleep(1)
 
-    conn.run(f"TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD={32 * 1024**3} ray start --address={address} --resources='" + '{"tpu": 1}\' --include-dashboard False', hide=True)
+    conn.run(f"RAY_IGNORE_VERSION_MISMATCH=1 TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD={32 * 1024**3} ray start --address={address} --resources='" + '{"tpu": 1}\' --include-dashboard False', hide=True)
