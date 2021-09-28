@@ -14,8 +14,8 @@ curl https://bazel.build/bazel-release.pub.gpg | sudo apt-key add -
 echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
 sudo apt update && sudo apt install bazel
 
-git clone https://github.com/leogao2/ray || echo already cloned
+sudo git clone https://github.com/leogao2/ray || echo already cloned
 cd ray
-git checkout no_ver
+sudo git checkout no_ver
 cd python
 sudo python3 setup.py install
