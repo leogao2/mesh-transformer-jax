@@ -12,4 +12,4 @@ git clone https://github.com/leogao2/ray || echo already cloned
 cd ray
 git checkout no_ver
 cd python
-sudo python setup.py install
+sudo python3 setup.py install
