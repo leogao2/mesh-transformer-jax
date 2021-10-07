@@ -377,7 +377,7 @@ class TransformerLayerShardV2(hk.Module):
         self.mp_num = thread_resources.env.shape['mp']
 
         self.norm = hk.LayerNorm(-1, True, True)
-        self.input_proj = hk.Linear(self.d_head * self.n_head * 3 + self.dim * 8)
+        self.input_proj = hk.Linear(self.d_head * self.n_head * 3 + self.dim * 4)
         self.output_proj = hk.Linear(self.dim,
                                      w_init=hk.initializers.TruncatedNormal(stddev=init_scale / jnp.sqrt(self.dim)))
 
@@ -477,15 +477,9 @@ class TransformerLayerShardV2(hk.Module):
         bias += attn_bias
 
         attn_out = self.self_attn(q, v, k, bias)
-        ff_out = self.glu(ff)
+        ff_out = jax.nn.gelu(ff)
 
         return self.output(attn_out, ff_out)
-
-    # [batch, seq, mp, dim*2//mp]
-    def glu(self, x):
-        out, gate = jnp.split(x, 2, axis=-1)
-
-        return out * jax.nn.gelu(gate)
 
     # iterate the decoding process by a single token
     def decode_once(self, decode_state, x, attn_bias):
@@ -509,7 +503,7 @@ class TransformerLayerShardV2(hk.Module):
         bias += attn_bias
 
         attn_out = self.self_attn(q, v, k, bias)
-        ff_out = self.glu(ff)
+        ff_out = jax.nn.gelu(ff)
 
         return self.output(attn_out, ff_out), {
             "tokens_decoded": tokens_decoded,
@@ -519,6 +513,7 @@ class TransformerLayerShardV2(hk.Module):
 
     # take in right aligned context tokens and generate an initial state
     def get_init_decode_state(self, x, given_length, attn_bias):
+        x = f_psum(x)
         x = self.norm(x)
 
         q, v, k, ff = self.input(x)
@@ -533,13 +528,10 @@ class TransformerLayerShardV2(hk.Module):
         bias += attn_bias  # finally add attn bias for rpe
 
         attn_out = self.self_attn(q, v, k, bias)
-        ff_out = self.glu(ff)
+        ff_out = jax.nn.gelu(ff)
 
-        return self.output(attn_out, ff_out), {
-            "tokens_decoded": given_length.astype(jnp.uint32),
-            "k": k,
-            "v": v,
-        }
+        return self.output(attn_out, ff_out),\
+               {"k": k, "v": v, "tokens_decoded": given_length.astype(jnp.uint32)}
 
 
 class ProjectionShard(hk.Module):
