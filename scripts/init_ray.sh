@@ -11,3 +11,5 @@ screen -d -m python -c 'import time; time.sleep(999999999)'
 
 # initializes jax and installs ray on cloud TPUs
 sudo pip install --upgrade jaxlib==0.1.67 jax==0.2.12 ray[default]==1.5.1 fabric dataclasses optax git+https://github.com/deepmind/dm-haiku tqdm cloudpickle smart_open[gcs] einops func_timeout
+
+curl https://raw.githubusercontent.com/leogao2/ray/4db2c807f34ba86de18a994ce51730cf24898fea/python/ray/_private/services.py | sudo tee /usr/local/lib/python3.8/dist-packages/ray/_private/services.py
